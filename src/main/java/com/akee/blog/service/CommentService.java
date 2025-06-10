@@ -1,16 +1,21 @@
 package com.akee.blog.service;
 
 import com.akee.blog.dto.CommentDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.akee.blog.entity.Comment;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.IService;
 
-public interface CommentService {
+import java.util.List;
+
+public interface CommentService extends IService<Comment> {
+    IPage<CommentDTO> getAllComments(Page<Comment> page);
+    IPage<CommentDTO> getCommentsByPost(Long postId, Page<Comment> page);
+    IPage<CommentDTO> getCommentsByUser(Long userId, Page<Comment> page);
+    IPage<CommentDTO> getRepliesByComment(Long commentId, Page<Comment> page);
+    CommentDTO getCommentById(Long id);
     CommentDTO createComment(CommentDTO commentDTO);
     CommentDTO updateComment(Long id, CommentDTO commentDTO);
     void deleteComment(Long id);
-    CommentDTO getCommentById(Long id);
-    Page<CommentDTO> getAllComments(Pageable pageable);
-    Page<CommentDTO> getCommentsByPost(Long postId, Pageable pageable);
-    Page<CommentDTO> getCommentsByUser(Long userId, Pageable pageable);
-    Page<CommentDTO> getRepliesByComment(Long commentId, Pageable pageable);
+    List<CommentDTO> getRepliesByCommentId(Long commentId);
 } 

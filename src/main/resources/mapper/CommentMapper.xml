@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.akee.blog.mapper.CommentMapper">
+    <resultMap id="BaseResultMap" type="com.akee.blog.entity.Comment">
+        <id column="id" property="id"/>
+        <result column="content" property="content"/>
+        <result column="post_id" property="postId"/>
+        <result column="user_id" property="userId"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="deleted" property="deleted"/>
+        <association property="user" javaType="com.akee.blog.entity.User">
+            <id column="user_id" property="id"/>
+            <result column="username" property="username"/>
+            <result column="avatar" property="avatar"/>
+        </association>
+    </resultMap>
+
+    <select id="selectCommentPage" resultMap="BaseResultMap">
+        SELECT 
+            c.*,
+            u.username,
+            u.avatar
+        FROM comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        WHERE c.deleted = 0
+        AND c.post_id = #{postId}
+        ORDER BY c.created_at DESC
+    </select>
+</mapper> 

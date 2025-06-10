@@ -1,40 +1,45 @@
 package com.akee.blog.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
-@Entity
-@Table(name = "user")
+@TableName("users")
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @TableField("username")
     private String username;
 
-    @Column(nullable = false)
-    private String password;
-
-    @Column(nullable = false, unique = true)
+    @TableField("email")
     private String email;
 
-    private String nickname;
+    @TableField("password")
+    private String password;
+
+    @TableField("role")
+    private String role;
+
+    @TableField("avatar")
     private String avatar;
+
+    @TableField("bio")
     private String bio;
 
+    @TableField("status")
+    private String status;
+
+    @TableField("reset_password_token")
     private String resetPasswordToken;
+
+    @TableField("reset_password_expires")
     private LocalDateTime resetPasswordExpires;
 
-    @CreationTimestamp
-    private LocalDateTime createTime;
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    private LocalDateTime updateTime;
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updatedAt;
 } 

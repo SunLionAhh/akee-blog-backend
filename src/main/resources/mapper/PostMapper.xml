@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.akee.blog.mapper.PostMapper">
+    <resultMap id="BaseResultMap" type="com.akee.blog.entity.Post">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="summary" property="summary"/>
+        <result column="cover_image" property="coverImage"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="comment_count" property="commentCount"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="deleted" property="deleted"/>
+        <association property="category" javaType="com.akee.blog.entity.Category">
+            <id column="category_id" property="id"/>
+            <result column="category_name" property="name"/>
+        </association>
+        <association property="user" javaType="com.akee.blog.entity.User">
+            <id column="user_id" property="id"/>
+            <result column="username" property="username"/>
+            <result column="avatar" property="avatar"/>
+        </association>
+        <collection property="tags" ofType="com.akee.blog.entity.Tag">
+            <id column="tag_id" property="id"/>
+            <result column="tag_name" property="name"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectPostPage" resultMap="BaseResultMap">
+        SELECT 
+            p.*,
+            c.id as category_id,
+            c.name as category_name,
+            u.id as user_id,
+            u.username,
+            u.avatar,
+            t.id as tag_id,
+            t.name as tag_name
+        FROM post p
+        LEFT JOIN category c ON p.category_id = c.id
+        LEFT JOIN user u ON p.user_id = u.id
+        LEFT JOIN post_tags pt ON p.id = pt.post_id
+        LEFT JOIN tag t ON pt.tag_id = t.id
+        WHERE p.deleted = 0
+        <if test="categoryId != null">
+            AND p.category_id = #{categoryId}
+        </if>
+        <if test="tagId != null">
+            AND EXISTS (
+                SELECT 1 FROM post_tags pt2 
+                WHERE pt2.post_id = p.id AND pt2.tag_id = #{tagId}
+            )
+        </if>
+        ORDER BY p.created_at DESC
+    </select>
+</mapper> 

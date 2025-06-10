@@ -6,9 +6,10 @@ import lombok.Data;
 public class UserDTO {
     private Long id;
     private String username;
-    private String password;
     private String email;
-    private String nickname;
+    private String password;
+    private String role;
     private String avatar;
     private String bio;
+    private String status;
 } 

@@ -1,25 +1,24 @@
 package com.akee.blog.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "category")
+@TableName("categories")
 public class Category {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @TableField("name")
     private String name;
 
+    @TableField("description")
     private String description;
 
-    public Long getId() {
-        return id;
-    }
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createdAt;
 
-    // 省略 getter/setter
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updatedAt;
 } 

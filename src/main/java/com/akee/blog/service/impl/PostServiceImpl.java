@@ -1,191 +1,213 @@
 package com.akee.blog.service.impl;
 
+import com.akee.blog.dto.CategoryDTO;
 import com.akee.blog.dto.PostDTO;
+import com.akee.blog.dto.TagDTO;
+import com.akee.blog.dto.UserDTO;
 import com.akee.blog.entity.Post;
 import com.akee.blog.entity.Category;
 import com.akee.blog.entity.Tag;
 import com.akee.blog.entity.User;
-import com.akee.blog.repository.PostRepository;
-import com.akee.blog.repository.CategoryRepository;
-import com.akee.blog.repository.TagRepository;
-import com.akee.blog.repository.UserRepository;
+import com.akee.blog.mapper.PostMapper;
+import com.akee.blog.mapper.CategoryMapper;
+import com.akee.blog.mapper.TagMapper;
+import com.akee.blog.mapper.UserMapper;
 import com.akee.blog.service.PostService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
-public class PostServiceImpl implements PostService {
+@Transactional
+@CacheConfig(cacheNames = "posts")
+public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements PostService {
 
     @Autowired
-    private PostRepository postRepository;
+    private PostMapper postMapper;
 
     @Autowired
-    private CategoryRepository categoryRepository;
+    private CategoryMapper categoryMapper;
 
     @Autowired
-    private TagRepository tagRepository;
+    private TagMapper tagMapper;
 
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
 
     @Override
-    @Transactional
+    @CacheEvict(allEntries = true)
     public PostDTO createPost(PostDTO postDTO) {
         Post post = new Post();
-        post.setTitle(postDTO.getTitle());
-        post.setContent(postDTO.getContent());
-        post.setSummary(postDTO.getSummary());
-        post.setStatus(postDTO.getStatus());
-        post.setViewCount(0);
-        post.setLikeCount(0);
-
-        Category category = categoryRepository.findById(postDTO.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
-        post.setCategory(category);
-
-        List<Tag> tags = new ArrayList<>();
-        for (Long tagId : postDTO.getTagIds()) {
-            Tag tag = tagRepository.findById(tagId)
-                    .orElseThrow(() -> new RuntimeException("Tag not found"));
-            tags.add(tag);
-        }
-        post.setTags(tags);
-
-        User user = userRepository.findById(postDTO.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        post.setUser(user);
-
-        Post savedPost = postRepository.save(post);
-        return convertToDTO(savedPost);
+        BeanUtils.copyProperties(postDTO, post);
+        baseMapper.insert(post);
+        postDTO.setId(post.getId());
+        return postDTO;
     }
 
     @Override
-    @Transactional
+    @CacheEvict(allEntries = true)
     public PostDTO updatePost(Long id, PostDTO postDTO) {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-
-        post.setTitle(postDTO.getTitle());
-        post.setContent(postDTO.getContent());
-        post.setSummary(postDTO.getSummary());
-        post.setStatus(postDTO.getStatus());
-
-        Category category = categoryRepository.findById(postDTO.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
-        post.setCategory(category);
-
-        List<Tag> tags = new ArrayList<>();
-        for (Long tagId : postDTO.getTagIds()) {
-            Tag tag = tagRepository.findById(tagId)
-                    .orElseThrow(() -> new RuntimeException("Tag not found"));
-            tags.add(tag);
+        Post post = baseMapper.selectById(id);
+        if (post == null) {
+            return null;
         }
-        post.setTags(tags);
-
-        Post updatedPost = postRepository.save(post);
-        return convertToDTO(updatedPost);
+        BeanUtils.copyProperties(postDTO, post);
+        baseMapper.updateById(post);
+        return postDTO;
     }
 
     @Override
-    @Transactional
+    @CacheEvict(allEntries = true)
     public void deletePost(Long id) {
-        postRepository.deleteById(id);
+        baseMapper.deleteById(id);
     }
 
     @Override
+    public IPage<PostDTO> getPostsByCategory(Long categoryId, Page<Post> page) {
+        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Post::getCategoryId, categoryId)
+               .orderByDesc(Post::getCreatedAt);
+        return baseMapper.selectPage(page, wrapper).convert(post -> {
+            PostDTO postDTO = new PostDTO();
+            BeanUtils.copyProperties(post, postDTO);
+            return postDTO;
+        });
+    }
+
+    @Override
+    public IPage<PostDTO> getPostsByTag(Long tagId, Page<Post> page) {
+        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
+        wrapper.inSql(Post::getId, "SELECT post_id FROM post_tags WHERE tag_id = " + tagId)
+               .orderByDesc(Post::getCreatedAt);
+        return baseMapper.selectPage(page, wrapper).convert(post -> {
+            PostDTO postDTO = new PostDTO();
+            BeanUtils.copyProperties(post, postDTO);
+            return postDTO;
+        });
+    }
+
+    @Override
+    public IPage<PostDTO> getPostsByUser(Long userId, Page<Post> page) {
+        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Post::getUserId, userId)
+               .orderByDesc(Post::getCreatedAt);
+        return baseMapper.selectPage(page, wrapper).convert(post -> {
+            PostDTO postDTO = new PostDTO();
+            BeanUtils.copyProperties(post, postDTO);
+            return postDTO;
+        });
+    }
+
+    @Override
+    public IPage<PostDTO> getAllPosts(Page<Post> page) {
+        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(Post::getCreatedAt);
+        return baseMapper.selectPage(page, wrapper).convert(post -> {
+            PostDTO postDTO = new PostDTO();
+            BeanUtils.copyProperties(post, postDTO);
+            
+            // 设置分类信息
+            if (post.getCategory() != null) {
+                postDTO.setCategoryName(post.getCategory().getName());
+            }
+            
+            // 设置作者信息
+            if (post.getUser() != null) {
+                postDTO.setUsername(post.getUser().getUsername());
+                postDTO.setUserAvatar(post.getUser().getAvatar());
+            }
+            
+            // 设置标签信息
+            if (post.getTags() != null) {
+                postDTO.setTagIds(post.getTags().stream()
+                    .map(tag -> tag.getId())
+                    .collect(Collectors.toSet()));
+                postDTO.setTagNames(post.getTags().stream()
+                    .map(tag -> tag.getName())
+                    .collect(Collectors.toSet()));
+            }
+            
+            return postDTO;
+        });
+    }
+
+    @Override
+    @Cacheable(key = "#id")
     public PostDTO getPostById(Long id) {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-        return convertToDTO(post);
-    }
-
-    @Override
-    public Page<PostDTO> getAllPosts(Pageable pageable) {
-        // 创建一个新的 Pageable 对象，并添加按 createdAt 字段倒序排序
-        Pageable sortedPageable = PageRequest.of(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
-        return postRepository.findAll(sortedPageable).map(this::convertToDTO);
-    }
-
-    @Override
-    public Page<PostDTO> getPostsByCategory(Long categoryId, Pageable pageable) {
-        return postRepository.findByCategoryId(categoryId, pageable).map(this::convertToDTO);
-    }
-
-    @Override
-    public Page<PostDTO> getPostsByTag(Long tagId, Pageable pageable) {
-        return postRepository.findByTagsId(tagId, pageable).map(this::convertToDTO);
-    }
-
-    @Override
-    public Page<PostDTO> getPostsByUser(Long userId, Pageable pageable) {
-        return postRepository.findByUserId(userId, pageable).map(this::convertToDTO);
-    }
-
-    @Override
-    @Transactional
-    public void incrementViewCount(Long id) {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-        post.setViewCount(post.getViewCount() + 1);
-        postRepository.save(post);
-    }
-
-    @Override
-    @Transactional
-    public void incrementLikeCount(Long id) {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-        post.setLikeCount(post.getLikeCount() + 1);
-        postRepository.save(post);
-    }
-
-    @Override
-    @Transactional
-    public void decrementLikeCount(Long id) {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-        if (post.getLikeCount() > 0) {
-            post.setLikeCount(post.getLikeCount() - 1);
-            postRepository.save(post);
+        Post post = baseMapper.selectById(id);
+        if (post == null) {
+            return null;
         }
+        PostDTO postDTO = new PostDTO();
+        BeanUtils.copyProperties(post, postDTO);
+        return postDTO;
+    }
+
+    @Override
+    @CacheEvict(allEntries = true)
+    public void incrementViewCount(Long id) {
+        Post post = baseMapper.selectById(id);
+        if (post != null) {
+            post.setViewCount(post.getViewCount() + 1);
+            baseMapper.updateById(post);
+        }
+    }
+
+    @Override
+    @CacheEvict(allEntries = true)
+    public void incrementLikeCount(Long id) {
+        Post post = baseMapper.selectById(id);
+        if (post != null) {
+            post.setLikeCount(post.getLikeCount() + 1);
+            baseMapper.updateById(post);
+        }
+    }
+
+    @Override
+    @CacheEvict(allEntries = true)
+    public void decrementLikeCount(Long id) {
+        Post post = baseMapper.selectById(id);
+        if (post == null) {
+            throw new RuntimeException("Post not found");
+        }
+        post.setLikeCount(Math.max(0, post.getLikeCount() - 1));
+        baseMapper.updateById(post);
     }
 
     private PostDTO convertToDTO(Post post) {
         PostDTO postDTO = new PostDTO();
-        postDTO.setId(post.getId());
-        postDTO.setTitle(post.getTitle());
-        postDTO.setContent(post.getContent());
-        postDTO.setSummary(post.getSummary());
-        postDTO.setCoverImage(post.getCover());
-        postDTO.setStatus(post.getStatus());
-        postDTO.setViewCount(post.getViewCount());
-        postDTO.setLikeCount(post.getLikeCount());
-        postDTO.setCommentCount(post.getCommentCount());
-        postDTO.setCategoryId(post.getCategory().getId());
-        postDTO.setCategoryName(post.getCategory().getName());
-        postDTO.setUserId(post.getUser().getId());
-        postDTO.setAuthorName(post.getUser().getUsername());
-        postDTO.setCreatedAt(post.getCreatedAt());
-        postDTO.setUpdatedAt(post.getUpdatedAt());
+        BeanUtils.copyProperties(post, postDTO);
 
-        List<Long> tagIds = new ArrayList<>();
-        List<String> tagNames = new ArrayList<>();
-        for (Tag tag : post.getTags()) {
-            tagIds.add(tag.getId());
-            tagNames.add(tag.getName());
+        // 获取分类信息
+        Category category = categoryMapper.selectById(post.getCategoryId());
+        if (category != null) {
+            postDTO.setCategoryName(category.getName());
         }
+
+        // 获取用户信息
+        User user = userMapper.selectById(post.getUserId());
+        if (user != null) {
+            postDTO.setUsername(user.getUsername());
+            postDTO.setUserAvatar(user.getAvatar());
+        }
+
+        // 获取标签信息
+        Set<Long> tagIds = new HashSet<>();
+        Set<String> tagNames = new HashSet<>();
+        // TODO: 实现标签查询逻辑
         postDTO.setTagIds(tagIds);
         postDTO.setTagNames(tagNames);
 

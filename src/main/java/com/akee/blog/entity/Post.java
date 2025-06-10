@@ -1,55 +1,58 @@
 package com.akee.blog.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 @Data
-@Entity
-@Table(name = "post")
+@TableName("post")
 public class Post {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(nullable = false)
     private String title;
 
-    @Lob
+    @TableField("content")
     private String content;
 
     private String summary;
-    private String cover;
+
+    @TableField("cover_image")
+    private String coverImage;
+
+    @TableField("view_count")
+    private Integer viewCount;
+
+    @TableField("like_count")
+    private Integer likeCount;
+
+    @TableField("comment_count")
+    private Integer commentCount;
 
     private String status;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @TableField("category_id")
+    private Long categoryId;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
+    @TableField("user_id")
+    private Long userId;
 
-    @ManyToMany
-    @JoinTable(
-        name = "post_tag",
-        joinColumns = @JoinColumn(name = "post_id"),
-        inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    private List<Tag> tags;
-
-    private Integer viewCount = 0;
-    private Integer likeCount = 0;
-    private Integer commentCount = 0;
-
-    @CreationTimestamp
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+
+    @TableLogic
+    private Integer deleted;
+
+    @TableField(exist = false)
+    private Category category;
+
+    @TableField(exist = false)
+    private User user;
+
+    @TableField(exist = false)
+    private Set<Tag> tags;
 } 

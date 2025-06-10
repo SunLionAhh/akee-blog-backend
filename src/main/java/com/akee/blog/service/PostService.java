@@ -1,18 +1,22 @@
 package com.akee.blog.service;
 
 import com.akee.blog.dto.PostDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.akee.blog.entity.Post;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.IService;
 
-public interface PostService {
+import java.util.List;
+
+public interface PostService extends IService<Post> {
+    IPage<PostDTO> getAllPosts(Page<Post> page);
+    PostDTO getPostById(Long id);
     PostDTO createPost(PostDTO postDTO);
     PostDTO updatePost(Long id, PostDTO postDTO);
     void deletePost(Long id);
-    PostDTO getPostById(Long id);
-    Page<PostDTO> getAllPosts(Pageable pageable);
-    Page<PostDTO> getPostsByCategory(Long categoryId, Pageable pageable);
-    Page<PostDTO> getPostsByTag(Long tagId, Pageable pageable);
-    Page<PostDTO> getPostsByUser(Long userId, Pageable pageable);
+    IPage<PostDTO> getPostsByCategory(Long categoryId, Page<Post> page);
+    IPage<PostDTO> getPostsByTag(Long tagId, Page<Post> page);
+    IPage<PostDTO> getPostsByUser(Long userId, Page<Post> page);
     void incrementViewCount(Long id);
     void incrementLikeCount(Long id);
     void decrementLikeCount(Long id);

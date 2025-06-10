@@ -2,92 +2,122 @@ package com.akee.blog.service.impl;
 
 import com.akee.blog.dto.CommentDTO;
 import com.akee.blog.entity.Comment;
-import com.akee.blog.repository.CommentRepository;
+import com.akee.blog.mapper.CommentMapper;
 import com.akee.blog.service.CommentService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @Transactional
-public class CommentServiceImpl implements CommentService {
-
-    @Autowired
-    private CommentRepository commentRepository;
+public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> implements CommentService {
 
     @Override
-    public CommentDTO createComment(CommentDTO commentDTO) {
-        Comment comment = new Comment();
-        BeanUtils.copyProperties(commentDTO, comment);
-        comment = commentRepository.save(comment);
-        BeanUtils.copyProperties(comment, commentDTO);
-        return commentDTO;
+    public IPage<CommentDTO> getAllComments(Page<Comment> page) {
+        LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(Comment::getCreatedAt);
+        return baseMapper.selectPage(page, wrapper).convert(comment -> {
+            CommentDTO commentDTO = new CommentDTO();
+            BeanUtils.copyProperties(comment, commentDTO);
+            return commentDTO;
+        });
     }
 
     @Override
-    public CommentDTO updateComment(Long id, CommentDTO commentDTO) {
-        Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
-        BeanUtils.copyProperties(commentDTO, comment, "id", "userId", "postId", "parentId", "createTime");
-        comment = commentRepository.save(comment);
-        BeanUtils.copyProperties(comment, commentDTO);
-        return commentDTO;
+    public IPage<CommentDTO> getCommentsByPost(Long postId, Page<Comment> page) {
+        LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Comment::getPostId, postId)
+               .orderByDesc(Comment::getCreatedAt);
+        return baseMapper.selectPage(page, wrapper).convert(comment -> {
+            CommentDTO commentDTO = new CommentDTO();
+            BeanUtils.copyProperties(comment, commentDTO);
+            return commentDTO;
+        });
     }
 
     @Override
-    public void deleteComment(Long id) {
-        commentRepository.deleteById(id);
+    public IPage<CommentDTO> getCommentsByUser(Long userId, Page<Comment> page) {
+        LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Comment::getUserId, userId)
+               .orderByDesc(Comment::getCreatedAt);
+        return baseMapper.selectPage(page, wrapper).convert(comment -> {
+            CommentDTO commentDTO = new CommentDTO();
+            BeanUtils.copyProperties(comment, commentDTO);
+            return commentDTO;
+        });
     }
 
     @Override
     public CommentDTO getCommentById(Long id) {
-        Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+        Comment comment = baseMapper.selectById(id);
+        if (comment == null) {
+            return null;
+        }
         CommentDTO commentDTO = new CommentDTO();
         BeanUtils.copyProperties(comment, commentDTO);
         return commentDTO;
     }
 
     @Override
-    public Page<CommentDTO> getAllComments(Pageable pageable) {
-        return commentRepository.findAll(pageable)
-                .map(comment -> {
-                    CommentDTO commentDTO = new CommentDTO();
-                    BeanUtils.copyProperties(comment, commentDTO);
-                    return commentDTO;
-                });
+    public CommentDTO createComment(CommentDTO commentDTO) {
+        Comment comment = new Comment();
+        BeanUtils.copyProperties(commentDTO, comment);
+        baseMapper.insert(comment);
+        commentDTO.setId(comment.getId());
+        return commentDTO;
     }
 
     @Override
-    public Page<CommentDTO> getCommentsByPost(Long postId, Pageable pageable) {
-        return commentRepository.findByPostId(postId, pageable)
-                .map(comment -> {
-                    CommentDTO commentDTO = new CommentDTO();
-                    BeanUtils.copyProperties(comment, commentDTO);
-                    return commentDTO;
-                });
+    public CommentDTO updateComment(Long id, CommentDTO commentDTO) {
+        Comment comment = baseMapper.selectById(id);
+        if (comment == null) {
+            return null;
+        }
+        BeanUtils.copyProperties(commentDTO, comment);
+        baseMapper.updateById(comment);
+        return commentDTO;
     }
 
     @Override
-    public Page<CommentDTO> getCommentsByUser(Long userId, Pageable pageable) {
-        return commentRepository.findByUserId(userId, pageable)
-                .map(comment -> {
-                    CommentDTO commentDTO = new CommentDTO();
-                    BeanUtils.copyProperties(comment, commentDTO);
-                    return commentDTO;
-                });
+    public void deleteComment(Long id) {
+        baseMapper.deleteById(id);
     }
 
     @Override
-    public Page<CommentDTO> getRepliesByComment(Long commentId, Pageable pageable) {
-        return commentRepository.findByParentId(commentId, pageable)
-                .map(comment -> {
-                    CommentDTO commentDTO = new CommentDTO();
-                    BeanUtils.copyProperties(comment, commentDTO);
-                    return commentDTO;
-                });
+    public List<CommentDTO> getRepliesByCommentId(Long commentId) {
+        List<Comment> replies = baseMapper.selectList(
+            new LambdaQueryWrapper<Comment>()
+                .eq(Comment::getParentId, commentId)
+        );
+        return replies.stream()
+            .map(reply -> {
+                CommentDTO replyDTO = new CommentDTO();
+                BeanUtils.copyProperties(reply, replyDTO);
+                if (reply.getUser() != null) {
+                    replyDTO.setUsername(reply.getUser().getUsername());
+                    replyDTO.setUserAvatar(reply.getUser().getAvatar());
+                }
+                return replyDTO;
+            })
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public IPage<CommentDTO> getRepliesByComment(Long commentId, Page<Comment> page) {
+        LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Comment::getParentId, commentId)
+               .orderByDesc(Comment::getCreatedAt);
+        return baseMapper.selectPage(page, wrapper).convert(comment -> {
+            CommentDTO commentDTO = new CommentDTO();
+            BeanUtils.copyProperties(comment, commentDTO);
+            return commentDTO;
+        });
     }
 } 

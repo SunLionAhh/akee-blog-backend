@@ -1,19 +1,23 @@
 package com.akee.blog.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "tag")
+@TableName("tags")
 public class Tag {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @TableField("name")
     private String name;
+
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createdAt;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updatedAt;
 
     public Long getId() {
         return id;

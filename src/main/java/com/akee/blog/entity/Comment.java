@@ -1,41 +1,39 @@
 package com.akee.blog.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Data
-@Entity
-@Table(name = "comment")
+@TableName("comments")
 public class Comment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Lob
+    @TableField("content")
     private String content;
 
-    private Date createdAt;
+    @TableField("post_id")
+    private Long postId;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @TableField("user_id")
+    private Long userId;
 
-    @ManyToOne
-    @JoinColumn(name = "post_id")
+    @TableField("parent_id")
+    private Long parentId;
+
+    @TableField(exist = false)
     private Post post;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
+    @TableField(exist = false)
+    private User user;
+
+    @TableField(exist = false)
     private Comment parent;
 
-    @CreationTimestamp
-    private LocalDateTime createTime;
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    private LocalDateTime updateTime;
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updatedAt;
 } 

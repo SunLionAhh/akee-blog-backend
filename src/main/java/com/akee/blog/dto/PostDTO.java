@@ -1,8 +1,9 @@
 package com.akee.blog.dto;
 
+import com.akee.blog.entity.PostStatus;
 import lombok.Data;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 @Data
 public class PostDTO {
@@ -11,16 +12,17 @@ public class PostDTO {
     private String content;
     private String summary;
     private String coverImage;
-    private String status;
-    private Long userId;
-    private String authorName;
-    private Long categoryId;
-    private String categoryName;
-    private List<Long> tagIds;
-    private List<String> tagNames;
     private Integer viewCount;
     private Integer likeCount;
     private Integer commentCount;
+    private String status;
+    private Long categoryId;
+    private String categoryName;
+    private Long userId;
+    private String username;
+    private String userAvatar;
+    private Set<Long> tagIds;
+    private Set<String> tagNames;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 } 
