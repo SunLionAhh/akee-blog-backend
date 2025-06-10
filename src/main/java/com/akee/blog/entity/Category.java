@@ -16,6 +16,9 @@ public class Category {
     @TableField("description")
     private String description;
 
+    @TableLogic
+    private Integer deleted;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

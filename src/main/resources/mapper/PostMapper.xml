@@ -30,7 +30,7 @@
     </resultMap>
 
     <select id="selectPostPage" resultMap="BaseResultMap">
-        SELECT 
+        SELECT
             p.*,
             c.id as category_id,
             c.name as category_name,
@@ -50,10 +50,10 @@
         </if>
         <if test="tagId != null">
             AND EXISTS (
-                SELECT 1 FROM post_tags pt2 
+                SELECT 1 FROM post_tags pt2
                 WHERE pt2.post_id = p.id AND pt2.tag_id = #{tagId}
             )
         </if>
         ORDER BY p.created_at DESC
     </select>
-</mapper> 
+</mapper>

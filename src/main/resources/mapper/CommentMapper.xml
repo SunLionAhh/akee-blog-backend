@@ -18,7 +18,7 @@
     </resultMap>
 
     <select id="selectCommentPage" resultMap="BaseResultMap">
-        SELECT 
+        SELECT
             c.*,
             u.username,
             u.avatar
@@ -28,4 +28,4 @@
         AND c.post_id = #{postId}
         ORDER BY c.created_at DESC
     </select>
-</mapper> 
+</mapper>

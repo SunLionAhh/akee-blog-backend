@@ -1,6 +1,5 @@
 package com.akee.blog.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -18,14 +17,10 @@ import java.time.Duration;
 @EnableCaching
 public class CacheConfig {
 
-    @Value("${spring.data.redis.key-prefix}")
-    private String keyPrefix;
-
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1))  // 设置缓存过期时间为1小时
-                .prefixCacheNameWith(keyPrefix) // 设置缓存key前缀
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
                 .disableCachingNullValues();    // 不缓存null值

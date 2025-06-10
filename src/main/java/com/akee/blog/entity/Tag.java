@@ -13,6 +13,12 @@ public class Tag {
     @TableField("name")
     private String name;
 
+    @TableField("description")
+    private String description;
+
+    @TableLogic
+    private Integer deleted;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

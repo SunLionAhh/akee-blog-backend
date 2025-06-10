@@ -37,6 +37,9 @@ public class User {
     @TableField("reset_password_expires")
     private LocalDateTime resetPasswordExpires;
 
+    @TableLogic
+    private Integer deleted;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
