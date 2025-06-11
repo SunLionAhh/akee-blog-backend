@@ -2,8 +2,13 @@ server:
   port: 8080
   servlet:
     context-path: /api
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 spring:
+  application:
+    name: akee-blog-backend
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/akee_blog?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
@@ -26,6 +31,19 @@ spring:
       connect-timeout: 5000
       client-type: lettuce
       key-prefix: "akee_blog:"
+  mail:
+    host: smtp.163.com
+    port: 465
+    username: mrduanminjie@163.com
+    password: CMqfctTgXXdwJQmE
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            enable: true
   jpa:
     hibernate:
       ddl-auto: update
@@ -39,6 +57,24 @@ spring:
     jwt:
       secret: your-secret-key-here-must-be-at-least-32-characters
       expiration: 86400000 # 24 hours
+
+file:
+  upload-dir: ./uploads
+
+logging:
+  level:
+    root: INFO
+    com:
+      akee: DEBUG
+    org:
+      springframework:
+        security: DEBUG
+      springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/application.log
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -54,6 +90,6 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 jwt:
-  secret: your-secret-key
+  secret: 9a4f2c8d3b7a1e6f45c8a0b3f267d8b1d4e6f3c8a9d2b5f8e3a9c6b1d4f7e2a5
   expiration: 86400000 # 24 hours
 

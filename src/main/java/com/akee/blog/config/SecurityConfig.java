@@ -17,10 +17,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 import org.springframework.http.HttpMethod;
 
 @Configuration
@@ -41,6 +43,7 @@ public class SecurityConfig {
                     csrf.disable();
                     logger.info("CSRF protection disabled");
                 })
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> {
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
                     logger.info("Session management set to STATELESS");
@@ -48,6 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> {
                     auth
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                            .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                             .requestMatchers("/api/auth/**").permitAll()
                             .requestMatchers("/api/upload").permitAll()
                             .requestMatchers("/uploads/**").permitAll()
@@ -56,6 +60,8 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/tags/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/users/username/akee").permitAll()
+                            .requestMatchers("/debugging_summary.html").permitAll()
+                            .requestMatchers("/error").permitAll()
                             .anyRequest().authenticated();
                     logger.info("Security rules configured: OPTIONS requests, /api/auth/**, /api/upload, /uploads/**, Swagger endpoints, and public article endpoints are public, others require authentication");
                 })
@@ -91,14 +97,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        logger.info("Creating password encoder");
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider tokenProvider, UserDetailsService userDetailsService) {
         logger.info("Creating JWT authentication filter");
         return new JwtAuthenticationFilter(tokenProvider, userDetailsService);
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8090"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+        configuration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 } 
